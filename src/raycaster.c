@@ -242,21 +242,19 @@ int main(void)
 
     while (1)
     {
-        uint8_t cmd =
-            usart2_read_byte();
-
-        if (cmd == 'a')
+        if (usart2_has_data())
         {
-            player.angle =
-                normalize_angle(
-                    player.angle + 1);
-        }
+            uint8_t cmd = usart2_read_byte();
 
-        if (cmd == 'd')
-        {
-            player.angle =
-                normalize_angle(
-                    player.angle - 1);
+            if (cmd == 'a')
+            {
+                player.angle = normalize_angle(player.angle + 1);
+            }
+
+            if (cmd == 'd')
+            {
+                player.angle = normalize_angle(player.angle - 1);
+            }
         }
 
         build_frame(&player);

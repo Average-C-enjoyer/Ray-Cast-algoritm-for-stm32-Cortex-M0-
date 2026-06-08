@@ -63,6 +63,16 @@
 } while(0)
 
 
+// ===========================================================
+// NVIC
+// ===========================================================
+
+// NVIC line
+#define NVIC_ISER (*(volatile uint32_t*)0xE000E100)
+
+// USART2 interrupt has 28th number in vector table (IRQ28)
+#define nvic_enable_usart2() NVIC_ISER |= (1u << 28)
+
 /* ---------------- CPU Pins --------------------- */
 #define PA1 1
 #define PA2 2

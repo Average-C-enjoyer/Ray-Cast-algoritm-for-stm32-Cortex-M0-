@@ -6,6 +6,7 @@
 .global main
 
 .extern SysTick_Handler
+.extern USART2_IRQHandler
 
 .extern _sidata
 .extern _sdata
@@ -34,6 +35,17 @@
 .word 0                 // PendSV
 
 .word SysTick_Handler + 1
+
+.word 0                 // WWDG
+.word 0                 // Reserved
+.word 0                 // RTC
+
+.rept 24
+.word 0
+.endr
+
+.word 0                // USART1
+.word USART2_IRQHandler + 1
 
 .section .text
 

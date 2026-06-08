@@ -15,7 +15,7 @@ TARGET = raycaster
 
 all: $(TARGET).bin
 
-$(TARGET).elf: startup.s src/$(TARGET).c src/systick.c
+$(TARGET).elf: startup.s src/$(TARGET).c src/systick.c src/uart.c
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 $(TARGET).bin: $(TARGET).elf

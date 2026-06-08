@@ -18,19 +18,27 @@
 /* CR1 bits */
 
 // CR1 USART enable
-#define USART_CR1_UE (1 << 0)
+#define USART_CR1_UE     (1 << 0)
 // CR1 Receiver Enable (RX)
-#define USART_CR1_RE (1 << 2)
+#define USART_CR1_RE     (1 << 2)
 // CR1 transmitter enable (TX)
-#define USART_CR1_TE (1 << 3)
+#define USART_CR1_TE     (1 << 3)
+// CR1 Enable RXNE Interrupt
+#define USART_CR1_RXNEIE (1 << 5)
 
 /* ISR bits */
 
 // Transmit data register empty (data ready to write)
-#define USART_ISR_TXE  (1 << 7)
+#define USART_ISR_TXE    (1 << 7)
 // Receive data register not empty (data ready to be read)
-#define USART_ISR_RXNE (1 << 5)
+#define USART_ISR_RXNE   (1 << 5)
 
+extern volatile uint8_t rx_buffer[64];
+extern volatile uint8_t rx_head;
+extern volatile uint8_t rx_tail;
+
+// Interruption
+void USART2_Handler(void);
 
 static __always_inline void usart2_init(void)
 {
@@ -57,7 +65,15 @@ static __always_inline void usart2_init(void)
     USART2_CR1 =
         USART_CR1_TE |
         USART_CR1_RE |
+        USART_CR1_RXNEIE |
         USART_CR1_UE;
+
+    nvic_enable_usart2();
+}
+
+static __always_inline uint8_t usart2_has_data(void)
+{
+    return rx_head != rx_tail;
 }
 
 static __always_inline void usart2_write_byte(uint8_t byte)
@@ -71,11 +87,11 @@ static __always_inline void usart2_write_byte(uint8_t byte)
 
 static __always_inline uint8_t usart2_read_byte(void)
 {
-    while (!(USART2_ISR & USART_ISR_RXNE))
-    {
-    }
+    uint8_t byte = rx_buffer[rx_tail];
 
-    return (uint8_t)USART2_RDR;
+    rx_tail = (rx_tail + 1) % 64;
+
+    return byte;
 }
 
 static __always_inline void usart2_write(
@@ -88,13 +104,15 @@ static __always_inline void usart2_write(
     }
 }
 
-static __always_inline void usart2_read(
-    uint8_t *buf,
-    uint32_t count)
+static __always_inline void usart2_read(uint8_t *buf)
 {
-    for (uint32_t i = 0; i < count; i++)
+    uint8_t i = 0;
+    while (rx_tail != rx_head)
     {
-        buf[i] = usart2_read_byte();
+        buf[i] = rx_buffer[rx_tail];
+
+        rx_tail = (rx_tail + 1) % 64;
+        i++;
     }
 }
 
