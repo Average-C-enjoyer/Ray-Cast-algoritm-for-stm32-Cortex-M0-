@@ -24,7 +24,17 @@ struct Player
     int16_t angle;
 };
 
-static uint8_t frame[SCREEN_W];
+// shade = 0 - close
+// shade = 1 - medium
+// shade = 2 - far away
+// shade = 3 - very far away
+struct __packed Column
+{
+    uint8_t height;
+    uint8_t shade;
+};
+
+struct Column frame[SCREEN_W];
 
 // Got this from internet, replace of multiply. Some how
 // Cortex-M0 can't divide and multiply integers >:(
@@ -99,7 +109,6 @@ static int32_t soft_div(int32_t dividend, int32_t divisor)
     return sign ? -(int32_t)quotient
                 : (int32_t)quotient;
 }
-
 
 static int16_t normalize_angle(int16_t angle)
 {
@@ -211,7 +220,16 @@ static void build_frame(const struct Player *player)
             height = SCREEN_H;
         }
 
-        frame[col] = (uint8_t)height;
+        if (corrected_distance < (130 << 8))
+            frame[col].shade = 0;
+        else if (corrected_distance < (155 << 8))
+            frame[col].shade = 1;
+        else if (corrected_distance < (170 << 8))
+            frame[col].shade = 2;
+        else
+            frame[col].shade = 3;
+
+        frame[col].height = (uint8_t)height;
     }
 }
 
@@ -220,8 +238,9 @@ static void send_frame(void)
     usart2_write_byte(0xAA);
 
     usart2_write(
-        frame,
-        SCREEN_W);
+    (uint8_t*)frame,
+    SCREEN_W * sizeof(struct Column)
+    );
 
     usart2_write_byte(0x55);
 }
@@ -246,12 +265,12 @@ int main(void)
         {
             uint8_t cmd = usart2_read_byte();
 
-            if (cmd == 'a')
+            if (cmd == 'l')
             {
                 player.angle = normalize_angle(player.angle + 1);
             }
 
-            if (cmd == 'd')
+            if (cmd == 'k')
             {
                 player.angle = normalize_angle(player.angle - 1);
             }

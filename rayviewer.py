@@ -1,4 +1,3 @@
-import sys
 import serial
 import curses
 import time
@@ -12,23 +11,44 @@ SCREEN_H = 21
 START_BYTE = 0xAA
 END_BYTE   = 0x55
 
+SHADE_CHARS = [
+    '#',  # close
+    '*',  # medium
+    '+',  # far
+    '.'   # very far
+]
+
 
 def read_frame(ser):
-    # wait for start
     while True:
         b = ser.read(1)
+
         if not b:
             return None
+
         if b[0] == START_BYTE:
             break
 
-    frame = ser.read(SCREEN_W)
-    if len(frame) != SCREEN_W:
+    raw = ser.read(SCREEN_W * 2)
+
+    if len(raw) != SCREEN_W * 2:
         return None
 
     end = ser.read(1)
-    if not end or end[0] != END_BYTE:
+
+    if not end:
         return None
+
+    if end[0] != END_BYTE:
+        return None
+
+    frame = []
+
+    for i in range(SCREEN_W):
+        height = raw[i * 2]
+        shade = raw[i * 2 + 1]
+
+        frame.append((height, shade))
 
     return frame
 
@@ -37,55 +57,63 @@ def draw(stdscr, frame):
     stdscr.clear()
 
     for col in range(SCREEN_W):
-        h = frame[col]
 
-        if h > SCREEN_H:
-            h = SCREEN_H
+        height, shade = frame[col]
 
-        top = (SCREEN_H - h) // 2
-        bottom = top + h
+        if height > SCREEN_H:
+            height = SCREEN_H
+
+        if shade > 3:
+            shade = 3
+
+        wall_char = SHADE_CHARS[shade]
+
+        top = (SCREEN_H - height) // 2
+        bottom = top + height
 
         for row in range(SCREEN_H):
-            x = col
-            y = row
 
             if top <= row < bottom:
-                stdscr.addch(y, x, ord('#'))
+                stdscr.addch(row, col, wall_char)
             else:
-                stdscr.addch(y, x, ord(' '))
+                stdscr.addch(row, col, ' ')
 
     stdscr.refresh()
 
 
 def main(stdscr):
-    ser = serial.Serial(PORT, BAUD, timeout=0.1)
+    ser = serial.Serial(
+        PORT,
+        BAUD,
+        timeout=0.05
+    )
 
     curses.curs_set(0)
+
     stdscr.nodelay(True)
     stdscr.timeout(0)
 
-    last_send = time.time()
-
     while True:
-        # -------- input ----------
+
         key = stdscr.getch()
 
         if key == ord('q'):
             break
 
-        if key == ord('a'):
-            ser.write(b'a')
+        if key == ord('l'):
+            ser.write(b'l')
 
-        if key == ord('d'):
-            ser.write(b'd')
+        if key == ord('k'):
+            ser.write(b'k')
 
-        # -------- frame ----------
         frame = read_frame(ser)
 
-        if frame:
+        if frame is not None:
             draw(stdscr, frame)
 
-        time.sleep(0.005)
+        time.sleep(0.002)
+
+    ser.close()
 
 
 if __name__ == "__main__":
