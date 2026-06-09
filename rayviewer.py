@@ -2,7 +2,7 @@ import serial
 import curses
 import time
 
-PORT = "/dev/cu.usbmodem11403"
+PORT = "/dev/cu.usbmodem11203"
 BAUD = 115200
 
 SCREEN_W = 80

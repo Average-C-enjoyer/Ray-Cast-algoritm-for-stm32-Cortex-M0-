@@ -13,8 +13,10 @@
 #define RCC_AHBENR  (*(volatile uint32_t*)0x40021014)
 
 // APB peripheral clock enable register 1
-// (address of register to enable USART2)
 #define RCC_APB1ENR (*(volatile uint32_t*)0x4002101C)
+
+// APB peripheral clock enable register 2
+#define RCC_APB2ENR (*(volatile uint32_t*)0x40021018)
 
 // USART2 enable is 17th bit (USART2 EN)
 #define rcc_enable_usart2() RCC_APB1ENR |= (1 << 17)
@@ -30,7 +32,15 @@
 #define GPIOA_MODER (*(volatile uint32_t*)0x48000000)
 // GPIOA Output Data register address
 #define GPIOA_ODR   (*(volatile uint32_t*)0x48000014)
+// GPIOA Input Data Register
+#define GPIOA_IDR   (*(volatile uint32_t*)0x48000010)
+// GPIOA Bit Set/Reset Register
+#define GPIOA_BSRR  (*(volatile uint32_t*)0x48000018)
 
+#define GPIO_MODE_INPUT    0
+#define GPIO_MODE_OUTPUT   1
+#define GPIO_MODE_ALT_FUNC 2
+#define GPIO_MODE_ANALOG   3
 
 #define gpio_moder_set(moder_addr, pin, mode) do{ \
     /* Clear the pin moder */                     \
@@ -39,10 +49,14 @@
     moder_addr |= (mode << (pin * 2));            \
 } while(0)
 
-#define GPIO_MODE_INPUT    0
-#define GPIO_MODE_OUTPUT   1
-#define GPIO_MODE_ALT_FUNC 2
-#define GPIO_MODE_ANALOG   3
+#define gpio_set(bsrr, pin) \
+    ((bsrr) = (1u << (pin)))
+
+#define gpio_reset(bsrr, pin) \
+    ((bsrr) = (1u << ((pin) + 16)))
+
+#define gpio_read(idr, pin) \
+    (((idr) >> (pin)) & 1u)
 
 
 // ===========================================================
@@ -74,6 +88,7 @@
 #define nvic_enable_usart2() NVIC_ISER |= (1u << 28)
 
 /* ---------------- CPU Pins --------------------- */
+#define PA0 0
 #define PA1 1
 #define PA2 2
 #define PA3 3
