@@ -7,6 +7,7 @@ int main(void)
 
     systick_init();
     usart2_init();
+    timer7_init();
 
     while (1)
     {
